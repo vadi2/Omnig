@@ -160,6 +160,8 @@ function copy_css()
     local fullpath = package_extract_location.."/"..args.igs[1].."/site/"..tocopy
     os_capture("cp -r -n "..fullpath.." "..output_location)
   end
+
+  os_capture("cp -r -n bootstrap-5.2.1-dist "..output_location)
 end
 
 for _, ig in ipairs(args.igs) do

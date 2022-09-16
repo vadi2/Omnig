@@ -135,6 +135,22 @@ function parse_page(ig, page)
     end
 end
 
+function parse_resource(ig, resource)
+  local path = package_extract_location.."/"..ig.."/site/"..resource.reference.reference:gsub('/', '-')..".html"
+  amalagmated_html = amalagmated_html.."\n"..read_file(path)
+end
+
+function parse_igs()
+  for _, ig in ipairs(args.igs) do
+    ig_resources[ig] = load_ig(ig)
+
+    parse_page(ig, ig_resources[ig].definition.page)
+    for _, resource in ipairs(ig_resources[ig].definition.resource) do
+      parse_resource(ig, resource)
+    end
+  end
+end
+
 function copy_css()
   for _, cssfile in ipairs{"fhir.css", "prism.css"} do
     local css_path = package_extract_location.."/"..args.igs[1].."/site/"..cssfile
@@ -152,14 +168,6 @@ function copy_css()
   end
 
   os_capture("cp -r -n bootstrap-5.2.1-dist "..output_location)
-end
-
-function parse_igs()
-  for _, ig in ipairs(args.igs) do
-    ig_resources[ig] = load_ig(ig)
-
-    parse_page(ig, ig_resources[ig].definition.page)
-  end
 end
 
 function generate_output()

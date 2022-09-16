@@ -5,6 +5,7 @@ local argparse = require "argparse"
 local lfs = require "lfs"
 local inspect = require "inspect"
 local lunajson = require "lunajson"
+local util = require "util"
 
 
 local parser = argparse("process-igs.lua",
@@ -17,6 +18,8 @@ local args = parser:parse()
 
 local package_extract_location = os.getenv("HOME").."/.fhir/implementation-guides/unzipped"
 local output_location = "output/"
+
+local packageindex
 local ig_resources = {}
 local amalagmated_html = ""
 
@@ -92,33 +95,9 @@ local footer = [[
 ]]
 
 
-
-function os_capture(cmd, raw)
-  local f = assert(io.popen(cmd, 'r'))
-  local s = assert(f:read('*a'))
-  f:close()
-  if raw then return s end
-  s = string.gsub(s, '^%s+', '')
-  s = string.gsub(s, '%s+$', '')
-  s = string.gsub(s, '[\n\r]+', ' ')
-  return s
-end
-
-function read_file(path)
-  local file = io.open(path, "rb")
-  if not file then return nil end
-  local content = file:read "*a"
-  file:close()
-  return content
-end
-
-function io_exists(item)
-  return lfs.attributes(item) and true or false
-end
-
 function load_ig(name)
   local path = package_extract_location.."/"..name.."/site/ImplementationGuide-"..name..".json"
-  if not io_exists(path) then
+  if not (path) then
     error("IG resource doesn't exist at:\n" ..path)
   end
 
@@ -143,6 +122,7 @@ end
 function parse_igs()
   for _, ig in ipairs(args.igs) do
     ig_resources[ig] = load_ig(ig)
+    print("Processing "..ig_resources[ig].title.."...")
 
     parse_page(ig, ig_resources[ig].definition.page)
     for _, resource in ipairs(ig_resources[ig].definition.resource) do
@@ -154,8 +134,8 @@ end
 function copy_css()
   for _, cssfile in ipairs{"fhir.css", "prism.css"} do
     local css_path = package_extract_location.."/"..args.igs[1].."/site/"..cssfile
-    if not io_exists(css_path) then error("CSS file missing: "..css_path) end
-    if not io_exists(cssfile) then
+    if not util.io_exists(css_path) then error("CSS file missing: "..css_path) end
+    if not util.io_exists(cssfile) then
       local file = io.open(output_location..cssfile, "w+")
       file:write(read_file(css_path))
       file:close()
@@ -164,38 +144,67 @@ function copy_css()
 
   for _, tocopy in ipairs{"assets", "*.png", "*.gif", "*.js"} do
     local fullpath = package_extract_location.."/"..args.igs[1].."/site/"..tocopy
-    os_capture("cp -r -n "..fullpath.." "..output_location)
+    util.os_capture("cp -r -n "..fullpath.." "..output_location)
   end
 
-  os_capture("cp -r -n bootstrap-5.2.1-dist "..output_location)
+  util.os_capture("cp -r -n bootstrap-5.2.1-dist "..output_location)
 end
 
-function generate_output()
+function generate_index()
   local index = {
     header,
     body(mainpage),
     footer
   }
 
-  if not io_exists(output_location) then lfs.mkdir(output_location) end
+  if not util.io_exists(output_location) then lfs.mkdir(output_location) end
   file = io.open(output_location.."/index.html", "w+")
   file:write(lth:translate(index, true))
   file:close()
+end
+
+function generate_amalgamated_header()
+  local output = {}
+  for _, ig in ipairs(args.igs) do
+    output[#output+1] = {'li', 
+        {ig_resources[ig].title}
+      }
+  end
+
+  return output
+end
+
+function generate_amalgamated()
+  local test = 
+  {'div', {
+    {'p', "Page generated from an amalagmation of:"},
+    {'ul', 
+      generate_amalgamated_header()
+      
+    }
+  }}
 
   local amalagmatedpage =
-    {'div',
+    {
+      test,
       amalagmated_html
     }
 
-  local amalagmated = {
-    amalagmatedpage
-  }
-
   file = io.open(output_location.."/amalagmated.html", "w+")
-  file:write(lth:translate(amalagmated, true))
+  file:write(lth:translate(amalagmatedpage, true))
   file:close()
   copy_css()
 end
+
+function generate_output()
+  print("Saving result...")
+  generate_index()
+
+  generate_amalgamated()
+end
+
+packageindex = util.load_package_index(util.download_index())
+util.validate_package_names(packageindex, args.igs)
 
 parse_igs()
 generate_output()

@@ -17,7 +17,7 @@ local args = parser:parse()
 
 local package_extract_location = os.getenv("HOME").."/.fhir/implementation-guides/unzipped"
 local ig_resources = {}
-
+local amalagmated_html = ""
 
 local header = [[
 <!doctype html>
@@ -64,11 +64,6 @@ local mainpage =
   }}
 }}
 
-local amalagmatedpage = 
-{'div'
-
-}
-
 local body = function(insert)
   return
   {'body', {
@@ -101,11 +96,6 @@ local index = {
 	footer
 }
 
-local amalagmated = {
-  header,
-  body(amalagmatedpage),
-  footer
-}
 
 -- parse ImplementationGuide resource
 -- squish all of the html pages together
@@ -144,9 +134,32 @@ function load_ig(name)
   return lunajson.decode(read_file(path))
 end
 
+function parse_page(ig, page)
+  local path = package_extract_location.."/"..ig.."/site/"..page.nameUrl
+  amalagmated_html = amalagmated_html.."\n"..read_file(path)
+
+  if page.page then
+    for _, innerpage in ipairs(page.page) do
+      parse_page(ig, innerpage) end
+    end
+end
+
 for _, ig in ipairs(args.igs) do
   ig_resources[ig] = load_ig(ig)
+
+  parse_page(ig, ig_resources[ig].definition.page)
 end
+
+local amalagmatedpage =
+{'div',
+  amalagmated_html
+}
+
+local amalagmated = {
+  header,
+  body(amalagmatedpage),
+  footer
+}
 
 file = io.open("output.html", "w+")
 file:write(lth:translate(index, true))

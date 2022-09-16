@@ -58,7 +58,7 @@ local mainpage =
   {'ul', class="icon-list ps-0", {
     {'li', class="d-flex align-items-start mb-1", {
       {'a', href="amalagmated.html", {
-       "Amalgamated mega-page of all IGs. Searchable with Ctrl+F"}
+       "Amalgamation of all IGs, searchable with Ctrl+F. Warning - large page"}
       }}
     },
     {'li', class="d-flex align-items-start mb-1", "List of all profiles"},
@@ -101,12 +101,12 @@ function load_ig(name)
     error("IG resource doesn't exist at:\n" ..path)
   end
 
-  return lunajson.decode(read_file(path))
+  return lunajson.decode(util.read_file(path))
 end
 
 function parse_page(ig, page)
   local path = package_extract_location.."/"..ig.."/site/"..page.nameUrl
-  amalagmated_html = amalagmated_html.."\n"..read_file(path)
+  amalagmated_html = amalagmated_html.."\n"..util.read_file(path)
 
   if page.page then
     for _, innerpage in ipairs(page.page) do
@@ -116,7 +116,7 @@ end
 
 function parse_resource(ig, resource)
   local path = package_extract_location.."/"..ig.."/site/"..resource.reference.reference:gsub('/', '-')..".html"
-  amalagmated_html = amalagmated_html.."\n"..read_file(path)
+  amalagmated_html = amalagmated_html.."\n"..util.read_file(path)
 end
 
 function parse_igs()
@@ -137,7 +137,7 @@ function copy_css()
     if not util.io_exists(css_path) then error("CSS file missing: "..css_path) end
     if not util.io_exists(cssfile) then
       local file = io.open(output_location..cssfile, "w+")
-      file:write(read_file(css_path))
+      file:write(util.read_file(css_path))
       file:close()
     end
   end

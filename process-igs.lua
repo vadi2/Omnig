@@ -1,11 +1,22 @@
 #!/usr/bin/env lua
 
-local lth = require('lua_to_html')
+local lth = require "lua_to_html"
+local argparse = require "argparse"
+local lfs = require "lfs"
+local inspect = require "inspect"
+local lunajson = require "lunajson"
 
 
+local parser = argparse("process-igs.lua",
+  "Concatenate IGs together.")
 
+parser:argument("igs", "List of IGs to process")
+   :args "+"
 
+local args = parser:parse()
 
+local package_extract_location = os.getenv("HOME").."/.fhir/implementation-guides/unzipped"
+local ig_resources = {}
 
 
 local header = [[
@@ -36,24 +47,37 @@ local header = [[
   </head>
 ]]
 
-local body =
+local mainpage =
+{'div', class="col-md-6", {
+  {'h2', 'Quick actions'},
+  {'p', 'A few ideas to get started with:'},
+  {'ul', class="icon-list ps-0", {
+    {'li', class="d-flex align-items-start mb-1", {
+      {'a', href="amalagmated.html", {
+       "Amalgamated mega-page of all IGs. Searchable with Ctrl+F"}
+      }}
+    },
+    {'li', class="d-flex align-items-start mb-1", "List of all profiles"},
+    {'li', class="d-flex align-items-start mb-1", "List of all extensions"},
+    {'li', class="d-flex align-items-start mb-1", "List of all valuesets"},
+    {'li', class="d-flex align-items-start mb-1", "List of all codesystems"},
+  }}
+}}
+
+local amalagmatedpage = 
+{'div'
+
+}
+
+local body = function(insert)
+  return
   {'body', {
     {'div', class="col-lg-8 mx-auto p-4 py-md-5", {
       {'header', class="d-flex align-items-center pb-3 mb-5 border-bottom", {
         'Omnig'
       }},
 
-      {'div', class="col-md-6", {
-        {'h2', 'Quick actions'},
-        {'p', 'A few ideas to get started with:'},
-        {'ul', class="icon-list ps-0", {
-          {'li', class="d-flex align-items-start mb-1", "Amalgamated mega-page of all IGs. Searchable with Ctrl+F"},
-          {'li', class="d-flex align-items-start mb-1", "List of all profiles"},
-          {'li', class="d-flex align-items-start mb-1", "List of all extensions"},
-          {'li', class="d-flex align-items-start mb-1", "List of all valuesets"},
-          {'li', class="d-flex align-items-start mb-1", "List of all codesystems"},
-        }}
-      }},
+      insert,
 
       {'footer', class="pt-5 my-5 text-muted border-top", {
         "Created by Vadim Peretokin &middot; &copy; 2022"
@@ -61,6 +85,7 @@ local body =
     }}
   }
 }
+end
 
 local footer = [[
   <script src="bootstrap-5.2.1-dist/bootstrap.bundle.min.js" integrity="sha384-u1OknCvxWvY5kfmNBILK2hRnQC3Pr17a+RTT6rIHI7NnikvbZlHgTPOOmMi466C8" crossorigin="anonymous"></script>
@@ -72,13 +97,61 @@ local footer = [[
 
 local index = {
 	header,
-  body,
+  body(mainpage),
 	footer
 }
 
-file = io.open("output.html", "w+")
+local amalagmated = {
+  header,
+  body(amalagmatedpage),
+  footer
+}
 
--- Write text to the file
+-- parse ImplementationGuide resource
+-- squish all of the html pages together
+-- add the css and js to the folder (just once)
+-- fin.
+
+function os_capture(cmd, raw)
+  local f = assert(io.popen(cmd, 'r'))
+  local s = assert(f:read('*a'))
+  f:close()
+  if raw then return s end
+  s = string.gsub(s, '^%s+', '')
+  s = string.gsub(s, '%s+$', '')
+  s = string.gsub(s, '[\n\r]+', ' ')
+  return s
+end
+
+function read_file(path)
+  local file = io.open(path, "rb")
+  if not file then return nil end
+  local content = file:read "*a"
+  file:close()
+  return content
+end
+
+function io_exists(item)
+  return lfs.attributes(item) and true or false
+end
+
+function load_ig(name)
+  local path = package_extract_location.."/"..name.."/site/ImplementationGuide-"..name..".json"
+  if not io_exists(path) then
+    error("IG resource doesn't exist at:\n" ..path)
+  end
+
+  return lunajson.decode(read_file(path))
+end
+
+for _, ig in ipairs(args.igs) do
+  ig_resources[ig] = load_ig(ig)
+end
+
+file = io.open("output.html", "w+")
 file:write(lth:translate(index, true))
 file:close()
 
+file = io.open("amalagmated.html", "w+")
+file:write(lth:translate(amalagmated, true))
+file:close()

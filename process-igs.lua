@@ -16,6 +16,7 @@ parser:argument("igs", "List of IGs to process")
 local args = parser:parse()
 
 local package_extract_location = os.getenv("HOME").."/.fhir/implementation-guides/unzipped"
+local output_location = "output/"
 local ig_resources = {}
 local amalagmated_html = ""
 
@@ -149,18 +150,16 @@ function copy_css()
     local css_path = package_extract_location.."/"..args.igs[1].."/site/"..cssfile
     if not io_exists(css_path) then error("CSS file missing: "..css_path) end
     if not io_exists(cssfile) then
-      local file = io.open(cssfile, "w+")
+      local file = io.open(output_location..cssfile, "w+")
       file:write(read_file(css_path))
       file:close()
     end
   end
 
-  local assets = package_extract_location.."/"..args.igs[1].."/site/assets"
-  local pngs = package_extract_location.."/"..args.igs[1].."/site/*.png"
-  local gifs = package_extract_location.."/"..args.igs[1].."/site/*.gif"
-  os_capture("cp -r -n "..assets.." .")
-  os_capture("cp -r -n "..pngs.." .")
-  os_capture("cp -r -n "..gifs.." .")
+  for _, tocopy in ipairs{"assets", "*.png", "*.gif"} do
+    local fullpath = package_extract_location.."/"..args.igs[1].."/site/"..tocopy
+    os_capture("cp -r -n "..fullpath.." "..output_location)
+  end
 end
 
 for _, ig in ipairs(args.igs) do
@@ -180,11 +179,12 @@ local amalagmated = {
   footer
 }
 
-file = io.open("output.html", "w+")
+if not io_exists(output_location) then lfs.mkdir(output_location) end
+file = io.open(output_location.."/index.html", "w+")
 file:write(lth:translate(index, true))
 file:close()
 
-file = io.open("amalagmated.html", "w+")
+file = io.open(output_location.."/amalagmated.html", "w+")
 file:write(lth:translate(amalagmated, true))
 file:close()
 copy_css()

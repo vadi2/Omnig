@@ -13,11 +13,9 @@ parser:option("-o --output-location", "Output folder location", "output")
 
 local args = parser:parse()
 
-local package_download_location = "/Users/phnl320128457/Desktop/ig-inputs-raw"
-local package_extract_location = "/Users/phnl320128457/Desktop/ig-inputs-unzipped"
+local package_download_location = os.getenv("HOME").."/.fhir/implementation-guides/raw"
+local package_extract_location = os.getenv("HOME").."/.fhir/implementation-guides/unzipped"
 local packageindex
-
-
 
 
 function os_capture(cmd, raw)
@@ -79,7 +77,7 @@ function unpack_package(packagename)
   local input_path = package_download_location.."/"..packagename.."/full-ig.zip"
   local output_path = package_extract_location.."/"..packagename
   if not io_exists(input_path) then
-    error(packagename.." hasn't yet been downloaded into the cache, is '"..path.."' available?")
+    error(packagename.." hasn't yet been downloaded into the cache, is '"..input_path.."' available?")
   end
 
   if io_exists(output_path) then
@@ -90,7 +88,7 @@ function unpack_package(packagename)
   lfs.mkdir(output_path)
 
   local command = "aunpack --extract-to="..output_path.. " " .. input_path
-  print(command)
+  print("Extracting "..packagename.."...")
   local output = os_capture(command)
 end
 

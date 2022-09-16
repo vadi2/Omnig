@@ -48,11 +48,23 @@ function download_index()
 end
 
 -- ensure that all of the requested packages for download are valid
-function validate_package_names(packageindex, packages_to_download)
-  assert(packageindex, "No package index to compare against available")
-  assert(packages_to_download, "No packages names to validate given")
+function validate_package_names(index, packages_to_download)
+  assert(type(packages_to_download) == "table", "No package index to compare against available")
+  assert(type(packages_to_download) == "table", "No packages names to validate given")
 
-  print(packageindex)
+  local available_packages, invalid_packages = {}, {}
+
+  for _, packageinfo in pairs(index) do
+    available_packages[packageinfo["package-id"]] = true
+  end
+
+  for _, name in pairs(packages_to_download) do
+    if not available_packages[name] then
+      invalid_packages[#invalid_packages+1] = name
+    end
+  end
+
+  if next(invalid_packages) then error("invalid packages names given: " .. inspect(invalid_packages)) end
 end
 
 -- unzips a given package
@@ -61,4 +73,4 @@ function unpack_package(packagename, output)
 end
 
 packageindex = load_package_index()
-validate_package_names(load_package_index, args.igs)
+validate_package_names(packageindex, args.igs)

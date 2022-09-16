@@ -144,6 +144,25 @@ function parse_page(ig, page)
     end
 end
 
+function copy_css()
+  for _, cssfile in ipairs{"fhir.css", "prism.css"} do
+    local css_path = package_extract_location.."/"..args.igs[1].."/site/"..cssfile
+    if not io_exists(css_path) then error("CSS file missing: "..css_path) end
+    if not io_exists(cssfile) then
+      local file = io.open(cssfile, "w+")
+      file:write(read_file(css_path))
+      file:close()
+    end
+  end
+
+  local assets = package_extract_location.."/"..args.igs[1].."/site/assets"
+  local pngs = package_extract_location.."/"..args.igs[1].."/site/*.png"
+  local gifs = package_extract_location.."/"..args.igs[1].."/site/*.gif"
+  os_capture("cp -r -n "..assets.." .")
+  os_capture("cp -r -n "..pngs.." .")
+  os_capture("cp -r -n "..gifs.." .")
+end
+
 for _, ig in ipairs(args.igs) do
   ig_resources[ig] = load_ig(ig)
 
@@ -168,3 +187,4 @@ file:close()
 file = io.open("amalagmated.html", "w+")
 file:write(lth:translate(amalagmated, true))
 file:close()
+copy_css()

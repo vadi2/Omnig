@@ -6,7 +6,7 @@ std = {
       "string", "os", "io", "assert", "require", "print", "error", "type", "pairs", "ipairs", "next",
 
 
-      "lua_to_html", "load_ig",
+      "lua_to_html", "load_ig", "parse_page", "copy_css",
       "file"
    }
 }

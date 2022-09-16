@@ -3,7 +3,8 @@
 local argparse = require "argparse"
 local lunajson = require "lunajson"
 local inspect = require "inspect"
-local lfs = require"lfs"
+local lfs = require "lfs"
+local http_request = require "http.request"
 
 local parser = argparse("download-igs.lua", "Ensures given FHIR Implementation Guides are available at a given location.")
 
@@ -41,15 +42,20 @@ function io_exists(item)
   return lfs.attributes(item) and true or false
 end
 
-function load_package_index()
-  local qas_content = read_file("/Users/phnl320128457/Downloads/qas.json")
-
+function load_package_index(qas_content)
   return lunajson.decode(qas_content)
 end
 
 -- download the list of available packages
 function download_index()
+  local location = "https://build.fhir.org/ig/qas.json"
+  local headers, stream = assert(http_request.new_from_uri(location):go())
+  local body = assert(stream:get_body_as_string())
+  if headers:get ":status" ~= "200" then
+      error("error downloading "..location..":"..body)
+  end
 
+  return body
 end
 
 -- ensure that all of the requested packages for download are valid
@@ -92,7 +98,7 @@ function unpack_package(packagename)
   local output = os_capture(command)
 end
 
-packageindex = load_package_index()
+packageindex = load_package_index(download_index())
 validate_package_names(packageindex, args.igs)
 
 if not io_exists(package_extract_location) then

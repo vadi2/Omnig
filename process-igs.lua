@@ -76,7 +76,7 @@ local body = function(insert)
       insert,
 
       {'footer', class="pt-5 my-5 text-muted border-top", {
-        "Created by Vadim Peretokin &middot; &copy; 2022"
+        "Omnig by Vadim Peretokin &middot; &copy; 2022"
       }}
     }}
   }
@@ -156,7 +156,7 @@ function copy_css()
     end
   end
 
-  for _, tocopy in ipairs{"assets", "*.png", "*.gif"} do
+  for _, tocopy in ipairs{"assets", "*.png", "*.gif", "*.js"} do
     local fullpath = package_extract_location.."/"..args.igs[1].."/site/"..tocopy
     os_capture("cp -r -n "..fullpath.." "..output_location)
   end
@@ -176,9 +176,7 @@ local amalagmatedpage =
 }
 
 local amalagmated = {
-  header,
-  body(amalagmatedpage),
-  footer
+  amalagmatedpage
 }
 
 if not io_exists(output_location) then lfs.mkdir(output_location) end

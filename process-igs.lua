@@ -91,17 +91,7 @@ local footer = [[
 </html>
 ]]
 
-local index = {
-	header,
-  body(mainpage),
-	footer
-}
 
-
--- parse ImplementationGuide resource
--- squish all of the html pages together
--- add the css and js to the folder (just once)
--- fin.
 
 function os_capture(cmd, raw)
   local f = assert(io.popen(cmd, 'r'))
@@ -164,27 +154,40 @@ function copy_css()
   os_capture("cp -r -n bootstrap-5.2.1-dist "..output_location)
 end
 
-for _, ig in ipairs(args.igs) do
-  ig_resources[ig] = load_ig(ig)
+function parse_igs()
+  for _, ig in ipairs(args.igs) do
+    ig_resources[ig] = load_ig(ig)
 
-  parse_page(ig, ig_resources[ig].definition.page)
+    parse_page(ig, ig_resources[ig].definition.page)
+  end
 end
 
-local amalagmatedpage =
-{'div',
-  amalagmated_html
-}
+function generate_output()
+  local index = {
+    header,
+    body(mainpage),
+    footer
+  }
 
-local amalagmated = {
-  amalagmatedpage
-}
+  if not io_exists(output_location) then lfs.mkdir(output_location) end
+  file = io.open(output_location.."/index.html", "w+")
+  file:write(lth:translate(index, true))
+  file:close()
 
-if not io_exists(output_location) then lfs.mkdir(output_location) end
-file = io.open(output_location.."/index.html", "w+")
-file:write(lth:translate(index, true))
-file:close()
+  local amalagmatedpage =
+    {'div',
+      amalagmated_html
+    }
 
-file = io.open(output_location.."/amalagmated.html", "w+")
-file:write(lth:translate(amalagmated, true))
-file:close()
-copy_css()
+  local amalagmated = {
+    amalagmatedpage
+  }
+
+  file = io.open(output_location.."/amalagmated.html", "w+")
+  file:write(lth:translate(amalagmated, true))
+  file:close()
+  copy_css()
+end
+
+parse_igs()
+generate_output()

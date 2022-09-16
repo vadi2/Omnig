@@ -3,6 +3,7 @@
 local argparse = require "argparse"
 local lunajson = require "lunajson"
 local inspect = require "inspect"
+local lfs = require"lfs"
 
 local parser = argparse("download-igs.lua", "Ensures given FHIR Implementation Guides are available at a given location.")
 
@@ -12,7 +13,9 @@ parser:option("-o --output-location", "Output folder location", "output")
 
 local args = parser:parse()
 
-local packageindex = {}
+local package_download_location = "/Users/phnl320128457/Desktop/ig-inputs-raw"
+local package_extract_location = "/Users/phnl320128457/Desktop/ig-inputs-unzipped"
+local packageindex
 
 
 
@@ -34,6 +37,10 @@ function read_file(path)
   local content = file:read "*a"
   file:close()
   return content
+end
+
+function io_exists(item)
+  return lfs.attributes(item) and true or false
 end
 
 function load_package_index()
@@ -68,9 +75,32 @@ function validate_package_names(index, packages_to_download)
 end
 
 -- unzips a given package
-function unpack_package(packagename, output)
+function unpack_package(packagename)
+  local input_path = package_download_location.."/"..packagename.."/full-ig.zip"
+  local output_path = package_extract_location.."/"..packagename
+  if not io_exists(input_path) then
+    error(packagename.." hasn't yet been downloaded into the cache, is '"..path.."' available?")
+  end
 
+  if io_exists(output_path) then
+    print("skipping as it is already extracted: "..packagename)
+    return
+  end
+
+  lfs.mkdir(output_path)
+
+  local command = "aunpack --extract-to="..output_path.. " " .. input_path
+  print(command)
+  local output = os_capture(command)
 end
 
 packageindex = load_package_index()
 validate_package_names(packageindex, args.igs)
+
+if not io_exists(package_extract_location) then
+  lfs.mkdir(package_extract_location)
+end
+
+for _, packagename in pairs(args.igs) do
+  unpack_package(packagename)
+end

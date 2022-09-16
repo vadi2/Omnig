@@ -6,7 +6,8 @@ local inspect = require "inspect"
 local lfs = require "lfs"
 local http_request = require "http.request"
 
-local parser = argparse("download-igs.lua", "Ensures given FHIR Implementation Guides are available at a given location.")
+local parser = argparse("download-igs.lua",
+  "Ensures given FHIR Implementation Guides are available at a given location.")
 
 parser:argument("igs", "List of IGs to download")
    :args "+"
@@ -76,6 +77,10 @@ function validate_package_names(index, packages_to_download)
   end
 
   if next(invalid_packages) then error("invalid packages names given: " .. inspect(invalid_packages)) end
+end
+
+function download_package(packagename)
+  -- figure out repo location from qas
 end
 
 -- unzips a given package

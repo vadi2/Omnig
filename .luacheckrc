@@ -1,7 +1,7 @@
 std = {
    globals = {
-      "lunajson", "argparse", "inspect",
-      "read_file", "os_capture", "load_package_index", "validate_package_names", "unpack_package", "download_index",
-      "string", "os", "assert", "require", "print"
+      "lunajson", "argparse", "inspect", "lfs",
+      "read_file", "os_capture", "io_exists", load_package_index", "validate_package_names", "unpack_package", "download_index",
+      "string", "os", "io", "assert", "require", "print", "error", "type", "pairs", "next"
    }
 }
